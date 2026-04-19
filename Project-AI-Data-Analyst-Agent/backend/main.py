@@ -77,16 +77,38 @@ def get_ai_insights(summary):
 async def analyze(file: UploadFile = File(...)):
     df = pd.read_csv(file.file)
 
-    summary = df.describe().to_string()
+    # Basic info
+    columns = list(df.columns)
+    rows = len(df)
 
-    basic_insights = generate_basic_insights(df)
+    # Basic insights
+    basic_insights = []
+    if df.isnull().sum().sum() > 0:
+        basic_insights.append("Dataset contains missing values.")
+    if df.select_dtypes(include='number').std().mean() > 50:
+        basic_insights.append("High variation in numeric data.")
+
+    # AI summary
+    summary = df.describe().to_string()
     ai_insights = get_ai_insights(summary)
 
+    # 🔥 NEW: stats
+    stats = df.describe().to_dict()
+
+    # 🔥 NEW: chart data
+    numeric_df = df.select_dtypes(include='number')
+    charts = {}
+    for col in numeric_df.columns:
+        charts[col] = numeric_df[col].dropna().tolist()
+
+    # ✅ FINAL RETURN (THIS IS WHERE YOU ADD IT)
     return {
-        "columns": list(df.columns),
-        "rows": len(df),
+        "columns": columns,
+        "rows": rows,
         "basic_insights": basic_insights,
-        "ai_insights": ai_insights
+        "ai_insights": ai_insights,
+        "stats": stats,
+        "charts": charts
     }
 
 def generate_basic_insights(df):
